@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "telnet.h"
 #include "load.h"
+#include "static.h"
 
 #define BUFFER_SIZE 1000
 
@@ -12,7 +13,7 @@ int checkNumber(char*);
 
 int main(int argc, char** argv) {
  if (argc < 3) {
-	 puts("usage: forg <listen ip> <listen port>");
+	 puts("usage: frogd <listen ip> <listen port>");
 	 return 2;
  }
 
@@ -67,8 +68,12 @@ int main(int argc, char** argv) {
   char buffer[BUFFER_SIZE]; 
   char jsonBuffer[BUFFER_SIZE];
   memInfo mem;
-
-  
+  char* top;
+  char* df;
+  char* blk;
+  char* interfaces;
+  char* service;
+ 
   while (1) {
     memset(buffer, 0, sizeof(buffer));
 
@@ -87,7 +92,103 @@ int main(int argc, char** argv) {
 		getMemInfo(&mem);
 		createJSON(getCpuLoad(), getProcessCount(), mem, jsonBuffer);
 		sendData(cliSock, jsonBuffer);
-	}
+	} else if (strcmp(buffer, "T") == 0) {
+		err = 0;
+		top = getTop(&err);
+
+		switch (err) {
+			case POPEN_ERROR:
+				error("popen() error");
+			break;
+
+			case MALLOC_ERROR:
+				error("malloc() error");
+			break;
+
+			case FREAD_ERROR:
+				error("fread() error");
+			break;
+		}
+
+		/*sprintf(intBuffer, "%ld", strlen(top));
+		sendData(cliSock, intBuffer);*/
+
+		sendData(cliSock, top);
+	} else if (strcmp(buffer, "D") == 0) {
+		err = 0;
+		df = getDf(&err);
+
+		switch (err) {
+			case POPEN_ERROR:
+				error("popen() error");
+			break;
+
+			case MALLOC_ERROR:
+				error("malloc() error");
+			break;
+	
+			case FREAD_ERROR:
+				error("fread() error");
+			break;
+		}
+
+		sendData(cliSock, df);
+    	 } else if (strcmp(buffer, "B") == 0) {
+		 err = 0;
+		 blk = getBlk(&err);
+		
+	         switch (err) {
+			case POPEN_ERROR:
+				error("popen() error");
+			break;
+
+			case MALLOC_ERROR:
+				error("malloc() error");
+			break;
+	
+			case FREAD_ERROR:
+				error("fread() error");
+			break;
+		 }
+
+		 sendData(cliSock, blk);
+       	} else if (strcmp(buffer, "I") == 0) {
+		err = 0;
+		interfaces = getIf(&err);
+		
+		switch (err) {
+			case POPEN_ERROR:
+				error("popen() error");
+			break;
+
+			case MALLOC_ERROR:
+				error("malloc() error");
+			break;
+	
+			case FREAD_ERROR:
+				error("fread() error");
+			break;
+		 }
+		sendData(cliSock, interfaces);
+    } else if (buffer[0] == 'V') {
+		err = 0;
+		service = getService((buffer + 1), &err);
+		
+		switch (err) {
+			case POPEN_ERROR:
+				error("popen() error");
+			break;
+
+			case MALLOC_ERROR:
+				error("malloc() error");
+			break;
+	
+			case FREAD_ERROR:
+				error("fread() error");
+			break;
+		 }
+		sendData(cliSock, service);
+    }
     }
   }
   
